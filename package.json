@@ -1,0 +1,37 @@
+{
+  "name": "fiber",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "npm-run-all --parallel dev:*",
+    "dev:server-compile": "webpack --config webpack.config.server.js --watch",
+    "dev:server": "nodemon ./build/server.js",
+    "dev:client-compile": "webpack --config webpack.config.client.js --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiaoyindong/fiber.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xiaoyindong/fiber/issues"
+  },
+  "homepage": "https://github.com/xiaoyindong/fiber#readme",
+  "devDependencies": {
+    "@babel/preset-env": "^7.14.2",
+    "@babel/preset-react": "^7.13.13",
+    "babel-loader": "^8.2.2",
+    "nodemon": "^2.0.7",
+    "npm-run-all": "^4.1.5",
+    "webpack": "^5.37.1",
+    "webpack-cli": "^4.7.0",
+    "webpack-node-externals": "^3.0.0",
+    "@babel/core": "^7.14.3"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
