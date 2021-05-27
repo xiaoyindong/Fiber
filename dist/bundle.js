@@ -47,6 +47,47 @@ function createElement(type, props) {
 
 /***/ }),
 
+/***/ "./src/react/Misc/CreateTaskQueue/index.js":
+/*!*************************************************!*\
+  !*** ./src/react/Misc/CreateTaskQueue/index.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+var createTaskQueue = function createTaskQueue() {
+  var taskQueue = [];
+  return {
+    push: function push(item) {
+      return taskQueue.push(item);
+    },
+    pop: function pop() {
+      return taskQueue.shift();
+    }
+  };
+};
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (createTaskQueue);
+
+/***/ }),
+
+/***/ "./src/react/Misc/index.js":
+/*!*********************************!*\
+  !*** ./src/react/Misc/index.js ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "createTaskQueue": () => (/* reexport safe */ _CreateTaskQueue__WEBPACK_IMPORTED_MODULE_0__.default)
+/* harmony export */ });
+/* harmony import */ var _CreateTaskQueue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CreateTaskQueue */ "./src/react/Misc/CreateTaskQueue/index.js");
+
+
+/***/ }),
+
 /***/ "./src/react/index.js":
 /*!****************************!*\
   !*** ./src/react/index.js ***!
@@ -55,13 +96,44 @@ function createElement(type, props) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "render": () => (/* reexport safe */ _reconciliation__WEBPACK_IMPORTED_MODULE_1__.render),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _CreateElement__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CreateElement */ "./src/react/CreateElement/index.js");
+/* harmony import */ var _reconciliation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./reconciliation */ "./src/react/reconciliation/index.js");
+
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   createElement: _CreateElement__WEBPACK_IMPORTED_MODULE_0__.default
 });
+
+/***/ }),
+
+/***/ "./src/react/reconciliation/index.js":
+/*!*******************************************!*\
+  !*** ./src/react/reconciliation/index.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "render": () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var _Misc__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Misc */ "./src/react/Misc/index.js");
+
+var taskQueue = (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.createTaskQueue)();
+var render = function render(element, dom) {
+  // 1. 向任务队列中添加任务
+  taskQueue.push({
+    dom: dom,
+    // 父级
+    props: {
+      children: element // 子级
+
+    }
+  });
+  console.log(taskQueue.pop()); // 2. 指定在浏览器空闲时执行任务
+};
 
 /***/ })
 
@@ -131,7 +203,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./react */ "./src/react/index.js");
 
 var jsx = /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hello Fiber"));
-console.log(JSON.stringify(jsx));
+var root = document.getElementById('root');
+(0,_react__WEBPACK_IMPORTED_MODULE_0__.render)(jsx, root);
 })();
 
 /******/ })()

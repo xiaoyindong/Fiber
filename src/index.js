@@ -1,6 +1,8 @@
-import React from './react';
+import React, { render } from './react';
 const jsx = <div>
     <p>Hello Fiber</p>
 </div>
 
-console.log(JSON.stringify(jsx));
+const root = document.getElementById('root');
+
+render(jsx, root)
