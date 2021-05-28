@@ -63,8 +63,20 @@ const reconcileChildren = (fiber, children) => {
 const executeTask = fiber => {
     // 构建子级fiber对象
     reconcileChildren(fiber, fiber.props.children)
+    // 有子级返回子级
     if (fiber.child) {
         return fiber.child
+    }
+    // 存储当前正在处理的对象
+    let currentExecutelyFiber = fiber;
+
+    while (currentExecutelyFiber.parent) {
+        // 有同级返回同级
+        if (currentExecutelyFiber.sibling) {
+            return currentExecutelyFiber.sibling
+        }
+        // 没有同级将父级给到循环，循环检查父级
+        currentExecutelyFiber = currentExecutelyFiber.parent
     }
     console.log(fiber)
 }

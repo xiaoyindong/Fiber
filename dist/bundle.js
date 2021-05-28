@@ -371,10 +371,23 @@ var reconcileChildren = function reconcileChildren(fiber, children) {
 
 var executeTask = function executeTask(fiber) {
   // 构建子级fiber对象
-  reconcileChildren(fiber, fiber.props.children);
+  reconcileChildren(fiber, fiber.props.children); // 有子级返回子级
 
   if (fiber.child) {
     return fiber.child;
+  } // 存储当前正在处理的对象
+
+
+  var currentExecutelyFiber = fiber;
+
+  while (currentExecutelyFiber.parent) {
+    // 有同级返回同级
+    if (currentExecutelyFiber.sibling) {
+      return currentExecutelyFiber.sibling;
+    } // 没有同级将父级给到循环，循环检查父级
+
+
+    currentExecutelyFiber = currentExecutelyFiber.parent;
   }
 
   console.log(fiber);
@@ -481,7 +494,7 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./react */ "./src/react/index.js");
 
-var jsx = /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hello Fiber"));
+var jsx = /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hello Fiber"), /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hi Fiber"));
 var root = document.getElementById('root');
 (0,_react__WEBPACK_IMPORTED_MODULE_0__.render)(jsx, root);
 })();
