@@ -6,20 +6,12 @@ const jsx = <div>
 
 const root = document.getElementById('root');
 
-// render(jsx, root)
+render(jsx, root)
 
-class Demo extends Component {
-    constructor(props) {
-        super(props);
-    }
-
-    render() {
-        return <div>{this.props.title}</div>
-    }
-}
-
-// function Demo(props) {
-//     return <div>{props.title}</div>
-// }
-
-render(<Demo title="class"/>, root)
+setTimeout(() => {
+    const jsx = <div>
+        <p>Hello React</p>
+        <p>Hi React</p>
+    </div>
+    render(jsx, root)
+}, 2000)

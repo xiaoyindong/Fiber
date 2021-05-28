@@ -3,6 +3,21 @@ export default function updateNodeElement(newElement, virtualDOM, oldVirtualDOM 
     const newProps = virtualDOM.props || {};
     // 获取旧的属性对象
     const oldProps = oldVirtualDOM.props || {};
+
+    if (virtualDOM.type === 'text') {
+        if (newProps.textContent !== oldProps.textContent) {
+            // 判断父级节点是否相同，如果不同就将当前文本追加到父级
+            if (virtualDOM.parent.type !== oldVirtualDOM.parent.type) {
+                virtualDOM.parent.stateNode.appencChild(document.createTextNode(newProps.textContent))
+            } else {
+                // 新的文本节点替换旧的文本节点
+                virtualDOM.parent.stateNode.replaceChild(document.createTextNode(newProps.textContent), oldVirtualDOM.stateNode);
+            }
+        }
+        return;
+    }
+
+
     Object.keys(newProps).forEach(propName => {
         // 新的属性值
         const newPropsValue = newProps[propName];
@@ -42,10 +57,10 @@ export default function updateNodeElement(newElement, virtualDOM, oldVirtualDOM 
         if (!newPropsValue) {
             // 判断是否是事件属性
             if (propName.startsWith('on')) {
-                 // 截取出事件名称
-                 const eventName = propName.toLowerCase().slice(2);
-                 // 删除事件
-                 newElement.removeEventListener(eventName, oldPropsValue);
+                // 截取出事件名称
+                const eventName = propName.toLowerCase().slice(2);
+                // 删除事件
+                newElement.removeEventListener(eventName, oldPropsValue);
             } else if (propName !== 'children') {
                 newElement.removeAttribute(propName);
             }

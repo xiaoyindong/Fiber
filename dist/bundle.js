@@ -130,6 +130,21 @@ function updateNodeElement(newElement, virtualDOM) {
   var newProps = virtualDOM.props || {}; // 获取旧的属性对象
 
   var oldProps = oldVirtualDOM.props || {};
+
+  if (virtualDOM.type === 'text') {
+    if (newProps.textContent !== oldProps.textContent) {
+      // 判断父级节点是否相同，如果不同就将当前文本追加到父级
+      if (virtualDOM.parent.type !== oldVirtualDOM.parent.type) {
+        virtualDOM.parent.stateNode.appencChild(document.createTextNode(newProps.textContent));
+      } else {
+        // 新的文本节点替换旧的文本节点
+        virtualDOM.parent.stateNode.replaceChild(document.createTextNode(newProps.textContent), oldVirtualDOM.stateNode);
+      }
+    }
+
+    return;
+  }
+
   Object.keys(newProps).forEach(function (propName) {
     // 新的属性值
     var newPropsValue = newProps[propName]; // 旧的属性值
@@ -374,16 +389,27 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "render": () => (/* binding */ render)
 /* harmony export */ });
-/* harmony import */ var _Misc__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Misc */ "./src/react/Misc/index.js");
+/* harmony import */ var _DOM__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../DOM */ "./src/react/DOM/index.js");
+/* harmony import */ var _Misc__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../Misc */ "./src/react/Misc/index.js");
 
-var taskQueue = (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.createTaskQueue)();
+
+var taskQueue = (0,_Misc__WEBPACK_IMPORTED_MODULE_1__.createTaskQueue)();
 var subTask = null;
 var pendingCommit = null;
 
 var commitAllWork = function commitAllWork(fiber) {
   fiber.effects.forEach(function (item) {
-    // 追加节点
-    if (item.effectTag === 'placement') {
+    if (item.effectTag === 'update') {
+      // 更新操作
+      if (item.type === item.alternate.type) {
+        // 节点类型相同
+        (0,_DOM__WEBPACK_IMPORTED_MODULE_0__.updateNodeElement)(item.stateNode, item, item.alternate);
+      } else {
+        // 节点类型不同
+        item.parent.stateNode.replaceChild(item.stateNode, item.alternate.stateNode);
+      }
+    } else if (item.effectTag === 'placement') {
+      // 追加节点
       var _fiber = item;
       var parentFiber = item.parent;
 
@@ -395,7 +421,9 @@ var commitAllWork = function commitAllWork(fiber) {
         parentFiber.stateNode.appendChild(_fiber.stateNode);
       }
     }
-  });
+  }); // 备份旧的Fiber节点对象
+
+  fiber.stateNode.__rootFiberContainer = fiber;
 };
 
 var getFirstTask = function getFirstTask() {
@@ -407,13 +435,14 @@ var getFirstTask = function getFirstTask() {
     stateNode: task.dom,
     tag: 'host_root',
     effects: [],
-    child: null
+    child: null,
+    alternate: task.dom.__rootFiberContainer
   };
 };
 
 var reconcileChildren = function reconcileChildren(fiber, children) {
   // 将children转换成数组
-  var arrifiedChildren = (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.arrified)(children);
+  var arrifiedChildren = (0,_Misc__WEBPACK_IMPORTED_MODULE_1__.arrified)(children);
   var index = 0;
   var numberOfElements = arrifiedChildren.length;
   var element = null; // 当前正在构建的的Fiber
@@ -421,30 +450,70 @@ var reconcileChildren = function reconcileChildren(fiber, children) {
   var newFiber = null; // 存储前一个节点，用于构建兄弟关系
 
   var prevFiber = null;
+  var alternate = null; // 如果有对象就获取子节点
+
+  if (fiber.alternate && fiber.alternate.child) {
+    // 如果找得到这个子节点就是children数组中的第一个节点的备份节点
+    alternate = fiber.alternate.child;
+  }
 
   while (index < numberOfElements) {
-    element = arrifiedChildren[index]; // 子级fiber
+    // 子级虚拟DOM对象
+    element = arrifiedChildren[index];
 
-    newFiber = {
-      type: element.type,
-      props: element.props,
-      tag: (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.getTag)(element),
-      effects: [],
-      effectTag: 'placement',
-      // 新增
-      stateNode: null,
-      // dom对象，暂时没有
-      parent: fiber
-    }; // 获取节点对象
+    if (element && alternate) {
+      // 更新操作
+      newFiber = {
+        type: element.type,
+        props: element.props,
+        tag: (0,_Misc__WEBPACK_IMPORTED_MODULE_1__.getTag)(element),
+        effects: [],
+        effectTag: 'update',
+        // 新增
+        stateNode: null,
+        // dom对象，暂时没有
+        parent: fiber,
+        alternate: alternate
+      };
 
-    newFiber.stateNode = (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.createStateNode)(newFiber);
-    console.log(newFiber); // 如果第一个子节点就赋值到fiber上
+      if (element.type === alternate.type) {
+        // 类型相同
+        newFiber.stateNode = alternate.stateNode;
+      } else {
+        // 类型不同
+        newFiber.stateNode = (0,_Misc__WEBPACK_IMPORTED_MODULE_1__.createStateNode)(newFiber);
+      }
+    } else if (element && !alternate) {
+      // 初始渲染
+      // 子级fiber
+      newFiber = {
+        type: element.type,
+        props: element.props,
+        tag: (0,_Misc__WEBPACK_IMPORTED_MODULE_1__.getTag)(element),
+        effects: [],
+        effectTag: 'placement',
+        // 新增
+        stateNode: null,
+        // dom对象，暂时没有
+        parent: fiber
+      }; // 获取节点对象
+
+      newFiber.stateNode = (0,_Misc__WEBPACK_IMPORTED_MODULE_1__.createStateNode)(newFiber);
+    } // 如果第一个子节点就赋值到fiber上
+
 
     if (index == 0) {
       fiber.child = newFiber;
     } else {
       // 否则放在前一个的兄弟节点上
       prevFiber.sibling = newFiber;
+    } // 更新alternate
+
+
+    if (alternate && alternate.sibling) {
+      alternate = alternate.sibling;
+    } else {
+      null;
     }
 
     prevFiber = newFiber;
@@ -589,59 +658,14 @@ var __webpack_exports__ = {};
   \**********************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./react */ "./src/react/index.js");
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
 
 var jsx = /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hello Fiber"), /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hi Fiber"));
-var root = document.getElementById('root'); // render(jsx, root)
-
-var Demo = /*#__PURE__*/function (_Component) {
-  _inherits(Demo, _Component);
-
-  var _super = _createSuper(Demo);
-
-  function Demo(props) {
-    _classCallCheck(this, Demo);
-
-    return _super.call(this, props);
-  }
-
-  _createClass(Demo, [{
-    key: "render",
-    value: function render() {
-      return /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, this.props.title);
-    }
-  }]);
-
-  return Demo;
-}(_react__WEBPACK_IMPORTED_MODULE_0__.Component); // function Demo(props) {
-//     return <div>{props.title}</div>
-// }
-
-
-(0,_react__WEBPACK_IMPORTED_MODULE_0__.render)( /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement(Demo, {
-  title: "class"
-}), root);
+var root = document.getElementById('root');
+(0,_react__WEBPACK_IMPORTED_MODULE_0__.render)(jsx, root);
+setTimeout(function () {
+  var jsx = /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hello React"), /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("p", null, "Hi React"));
+  (0,_react__WEBPACK_IMPORTED_MODULE_0__.render)(jsx, root);
+}, 2000);
 })();
 
 /******/ })()
