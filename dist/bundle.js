@@ -387,7 +387,7 @@ var commitAllWork = function commitAllWork(fiber) {
       var _fiber = item;
       var parentFiber = item.parent;
 
-      while (parentFiber.tag === 'class_component') {
+      while (parentFiber.tag === 'class_component' || parentFiber.tag === 'function_component') {
         parentFiber = parentFiber.parent;
       }
 
@@ -437,7 +437,8 @@ var reconcileChildren = function reconcileChildren(fiber, children) {
       parent: fiber
     }; // 获取节点对象
 
-    newFiber.stateNode = (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.createStateNode)(newFiber); // 如果第一个子节点就赋值到fiber上
+    newFiber.stateNode = (0,_Misc__WEBPACK_IMPORTED_MODULE_0__.createStateNode)(newFiber);
+    console.log(newFiber); // 如果第一个子节点就赋值到fiber上
 
     if (index == 0) {
       fiber.child = newFiber;
@@ -455,6 +456,8 @@ var executeTask = function executeTask(fiber) {
   // 构建子级fiber对象
   if (fiber.tag === 'class_component') {
     reconcileChildren(fiber, fiber.stateNode.render());
+  } else if (fiber.tag === 'function_component') {
+    reconcileChildren(fiber, fiber.stateNode(fiber.props));
   } else {
     reconcileChildren(fiber, fiber.props.children);
   } // 有子级返回子级
@@ -626,14 +629,19 @@ var Demo = /*#__PURE__*/function (_Component) {
   _createClass(Demo, [{
     key: "render",
     value: function render() {
-      return /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, "yindong");
+      return /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement("div", null, this.props.title);
     }
   }]);
 
   return Demo;
-}(_react__WEBPACK_IMPORTED_MODULE_0__.Component);
+}(_react__WEBPACK_IMPORTED_MODULE_0__.Component); // function Demo(props) {
+//     return <div>{props.title}</div>
+// }
 
-(0,_react__WEBPACK_IMPORTED_MODULE_0__.render)( /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement(Demo, null), root);
+
+(0,_react__WEBPACK_IMPORTED_MODULE_0__.render)( /*#__PURE__*/_react__WEBPACK_IMPORTED_MODULE_0__.default.createElement(Demo, {
+  title: "class"
+}), root);
 })();
 
 /******/ })()

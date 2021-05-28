@@ -14,8 +14,12 @@ class Demo extends Component {
     }
 
     render() {
-        return <div>yindong</div>
+        return <div>{this.props.title}</div>
     }
 }
 
-render(<Demo />, root)
+// function Demo(props) {
+//     return <div>{props.title}</div>
+// }
+
+render(<Demo title="class"/>, root)

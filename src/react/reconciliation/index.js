@@ -17,7 +17,7 @@ const commitAllWork = fiber => {
         if (item.effectTag === 'placement') {
             let fiber = item;
             let parentFiber = item.parent
-            while (parentFiber.tag === 'class_component') {
+            while (parentFiber.tag === 'class_component' || parentFiber.tag === 'function_component') {
                 parentFiber = parentFiber.parent;
             }
             if (fiber.tag === 'host_component') {
@@ -54,7 +54,6 @@ const reconcileChildren = (fiber, children) => {
     // 存储前一个节点，用于构建兄弟关系
     let prevFiber = null;
     while (index < numberOfElements) {
-
         element = arrifiedChildren[index];
         // 子级fiber
         newFiber = {
@@ -68,6 +67,7 @@ const reconcileChildren = (fiber, children) => {
         }
         // 获取节点对象
         newFiber.stateNode = createStateNode(newFiber);
+        console.log(newFiber);
         // 如果第一个子节点就赋值到fiber上
         if (index == 0) {
             fiber.child = newFiber;
@@ -84,6 +84,8 @@ const executeTask = fiber => {
     // 构建子级fiber对象
     if (fiber.tag === 'class_component') {
         reconcileChildren(fiber, fiber.stateNode.render())
+    } else if (fiber.tag === 'function_component') {
+        reconcileChildren(fiber, fiber.stateNode(fiber.props))
     } else {
         reconcileChildren(fiber, fiber.props.children)
     }
