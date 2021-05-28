@@ -9,6 +9,24 @@ const taskQueue = createTaskQueue();
 
 let subTask = null;
 
+let pendingCommit = null;
+
+const commitAllWork = fiber => {
+    fiber.effects.forEach(item => {
+        // 追加节点
+        if (item.effectTag === 'placement') {
+            let fiber = item;
+            let parentFiber = item.parent
+            while (parentFiber.tag === 'class_component') {
+                parentFiber = parentFiber.parent;
+            }
+            if (fiber.tag === 'host_component') {
+                parentFiber.stateNode.appendChild(fiber.stateNode);
+            }
+        }
+    })
+}
+
 const getFirstTask = () => {
     // 从任务队列中获取任务
     const task = taskQueue.pop();
@@ -36,7 +54,9 @@ const reconcileChildren = (fiber, children) => {
     // 存储前一个节点，用于构建兄弟关系
     let prevFiber = null;
     while (index < numberOfElements) {
+
         element = arrifiedChildren[index];
+        // 子级fiber
         newFiber = {
             type: element.type,
             props: element.props,
@@ -62,7 +82,11 @@ const reconcileChildren = (fiber, children) => {
 
 const executeTask = fiber => {
     // 构建子级fiber对象
-    reconcileChildren(fiber, fiber.props.children)
+    if (fiber.tag === 'class_component') {
+        reconcileChildren(fiber, fiber.stateNode.render())
+    } else {
+        reconcileChildren(fiber, fiber.props.children)
+    }
     // 有子级返回子级
     if (fiber.child) {
         return fiber.child
@@ -71,6 +95,7 @@ const executeTask = fiber => {
     let currentExecutelyFiber = fiber;
 
     while (currentExecutelyFiber.parent) {
+        currentExecutelyFiber.parent.effects = currentExecutelyFiber.parent.effects.concat(currentExecutelyFiber.effects.concat(currentExecutelyFiber))
         // 有同级返回同级
         if (currentExecutelyFiber.sibling) {
             return currentExecutelyFiber.sibling
@@ -78,7 +103,7 @@ const executeTask = fiber => {
         // 没有同级将父级给到循环，循环检查父级
         currentExecutelyFiber = currentExecutelyFiber.parent
     }
-    console.log(fiber)
+    pendingCommit = currentExecutelyFiber;
 }
 
 const workLoop = deadline => {
@@ -89,6 +114,10 @@ const workLoop = deadline => {
     // 任务存在并且浏览器空余时间大于1ms执行任务
     while (subTask && deadline.timeRemaining() > 1) {
         subTask = executeTask(subTask);
+    }
+    // 执行第二阶段
+    if (pendingCommit) {
+        commitAllWork(pendingCommit)
     }
 }
 

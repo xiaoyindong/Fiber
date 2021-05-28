@@ -1,4 +1,4 @@
-import React, { render } from './react';
+import React, { render, Component } from './react';
 const jsx = <div>
     <p>Hello Fiber</p>
     <p>Hi Fiber</p>
@@ -6,4 +6,16 @@ const jsx = <div>
 
 const root = document.getElementById('root');
 
-render(jsx, root)
+// render(jsx, root)
+
+class Demo extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        return <div>yindong</div>
+    }
+}
+
+render(<Demo />, root)
