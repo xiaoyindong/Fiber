@@ -8,7 +8,7 @@ const createTaskQueue = () => {
             return taskQueue.shift();
         },
         isEmpty: () => { // 判断是否存在任务
-            taskQueue.length === 0
+            return taskQueue.length === 0
         }
     }
 }

@@ -5,17 +5,25 @@ import {
     createTaskQueue,
     arrified,
     createStateNode,
-    getTag
+    getTag,
+    getRoot
 } from '../Misc';
-
+// 任务队列
 const taskQueue = createTaskQueue();
-
+// 要执行的子任务
 let subTask = null;
-
+// 存储即将渲染dom的fiber
 let pendingCommit = null;
 
 const commitAllWork = fiber => {
+    // 循环 effets 数组 构建 DOM 节点树
     fiber.effects.forEach(item => {
+        // 如果是类组件就将fiber备份存储到实例中
+        if (item.tag === 'class_component') {
+            // 处理的是类组件
+            item.stateNode.__fiber = item;
+        }
+        // 删除操作
         if (item.effectTag === 'delete') {
             item.parent.stateNode.removeChild(item.stateNode);
         } else if (item.effectTag === 'update') {
@@ -28,12 +36,16 @@ const commitAllWork = fiber => {
                 item.parent.stateNode.replaceChild(item.stateNode, item.alternate.stateNode);
             }
         } else if (item.effectTag === 'placement') {
-            // 追加节点
+            // 向页面中追加节点
+            // 当前要追加的子节点
             let fiber = item;
+            // 当前要追加的子节点的父级
             let parentFiber = item.parent
+            // 找到普通节点父级 排除组件父级 因为组件父级是不能直接追加真实DOM节点的
             while (parentFiber.tag === 'class_component' || parentFiber.tag === 'function_component') {
                 parentFiber = parentFiber.parent;
             }
+            // 如果子节点是普通节点 找到父级 将子节点追加到父级中
             if (fiber.tag === 'host_component') {
                 parentFiber.stateNode.appendChild(fiber.stateNode);
             }
@@ -46,6 +58,19 @@ const commitAllWork = fiber => {
 const getFirstTask = () => {
     // 从任务队列中获取任务
     const task = taskQueue.pop();
+    if (task.from === 'class_component') {
+        const root = getRoot(task.instance);
+        // 将要更新的状态存储起来
+        task.instance.__fiber.partialState = task.partialState;
+        return {
+            props: root.props,
+            stateNode: root.stateNode,
+            tag: 'host_root',
+            effects: [],
+            child: null,
+            alternate: root // root就是备份
+        };
+    }
     // 返回最外层节点Fiber对象
     return {
         props: task.props,
@@ -115,7 +140,7 @@ const reconcileChildren = (fiber, children) => {
                 effectTag: 'placement', // 新增
                 parent: fiber,
             }
-            // 获取节点对象
+            // 为fiber节点添加DOM对象或组件实例对象
             newFiber.stateNode = createStateNode(newFiber);
         }
 
@@ -140,6 +165,13 @@ const reconcileChildren = (fiber, children) => {
 const executeTask = fiber => {
     // 构建子级fiber对象
     if (fiber.tag === 'class_component') {
+        // 更新state
+        if (fiber.stateNode.__fiber && fiber.stateNode.__fiber.partialState) {
+            fiber.stateNode.state = {
+                ...fiber.stateNode.state,
+                ...fiber.stateNode.__fiber.partialState
+            }
+        }
         reconcileChildren(fiber, fiber.stateNode.render())
     } else if (fiber.tag === 'function_component') {
         reconcileChildren(fiber, fiber.stateNode(fiber.props))
@@ -172,6 +204,7 @@ const workLoop = deadline => {
     }
     // 任务存在并且浏览器空余时间大于1ms执行任务
     while (subTask && deadline.timeRemaining() > 1) {
+        // executeTask 方法执行任务 接受任务 返回新的任务
         subTask = executeTask(subTask);
     }
     // 执行第二阶段
@@ -181,6 +214,7 @@ const workLoop = deadline => {
 }
 
 const performTask = deadline => {
+    // 执行任务
     workLoop(deadline);
     // 判断任务是否存在，判断队列中是否有任务没有执行
     if (subTask || !taskQueue.isEmpty()) {
@@ -196,6 +230,18 @@ export const render = (element, dom) => {
             children: element // 子级
         }
     })
+    // 任务就是通过 vdom 对象 构建 fiber 对象
     // 2. 指定在浏览器空闲时执行任务
+    requestIdleCallback(performTask)
+}
+
+export const scheduleUpdate = (instance, partialState) => {
+    // 更新state的任务添加到任务队列中
+    taskQueue.push({
+        from: 'class_component',
+        instance,
+        partialState
+    })
+    // 指定在浏览器空闲时执行任务
     requestIdleCallback(performTask)
 }

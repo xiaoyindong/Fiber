@@ -6,11 +6,19 @@ const jsx = <div>
 
 const root = document.getElementById('root');
 
-render(jsx, root)
+class Demo extends Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            name: 'yd'
+        }
+    }
+    render() {
+        return <div>
+            <div>{this.state.name}</div>
+            <button onClick={() => { this.setState({ name: 'yindong'})}}>button</button>
+        </div>
+    }
+}
 
-setTimeout(() => {
-    const jsx = <div>
-        <p>Hi React</p>
-    </div>
-    render(jsx, root)
-}, 2000)
+render(<Demo />, root)
