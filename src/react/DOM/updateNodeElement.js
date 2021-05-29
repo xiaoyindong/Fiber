@@ -17,7 +17,6 @@ export default function updateNodeElement(newElement, virtualDOM, oldVirtualDOM 
         return;
     }
 
-
     Object.keys(newProps).forEach(propName => {
         // 新的属性值
         const newPropsValue = newProps[propName];

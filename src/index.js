@@ -10,7 +10,6 @@ render(jsx, root)
 
 setTimeout(() => {
     const jsx = <div>
-        <p>Hello React</p>
         <p>Hi React</p>
     </div>
     render(jsx, root)

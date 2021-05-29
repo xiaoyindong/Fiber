@@ -1,4 +1,6 @@
-import { updateNodeElement } from '../DOM';
+import {
+    updateNodeElement
+} from '../DOM';
 import {
     createTaskQueue,
     arrified,
@@ -14,7 +16,9 @@ let pendingCommit = null;
 
 const commitAllWork = fiber => {
     fiber.effects.forEach(item => {
-        if (item.effectTag === 'update') {
+        if (item.effectTag === 'delete') {
+            item.parent.stateNode.removeChild(item.stateNode);
+        } else if (item.effectTag === 'update') {
             // 更新操作
             if (item.type === item.alternate.type) {
                 // 节点类型相同
@@ -56,11 +60,11 @@ const getFirstTask = () => {
 const reconcileChildren = (fiber, children) => {
     // 将children转换成数组
     const arrifiedChildren = arrified(children);
-
+    // 循环 children 使用的索引
     let index = 0;
-
+    // children 数组中元素的个数
     let numberOfElements = arrifiedChildren.length;
-
+    // 循环过程中的循环项 就是子节点的 virtualDOM 对象
     let element = null;
     // 当前正在构建的的Fiber
     let newFiber = null;
@@ -73,10 +77,16 @@ const reconcileChildren = (fiber, children) => {
         // 如果找得到这个子节点就是children数组中的第一个节点的备份节点
         alternate = fiber.alternate.child;
     }
-    while (index < numberOfElements) {
+    while (index < numberOfElements || alternate) {
         // 子级虚拟DOM对象
         element = arrifiedChildren[index];
-        if (element && alternate) {
+        // 如果element不存在，alternate存在，就是删除
+        if (!element && alternate) {
+            // 删除节点
+            alternate.effectTag = 'delete'
+            // 添加到父级的effects数组中
+            fiber.effects.push(alternate);
+        } else if (element && alternate) {
             // 更新操作
             newFiber = {
                 type: element.type,
@@ -84,7 +94,6 @@ const reconcileChildren = (fiber, children) => {
                 tag: getTag(element),
                 effects: [],
                 effectTag: 'update', // 新增
-                stateNode: null, // dom对象，暂时没有
                 parent: fiber,
                 alternate,
             }
@@ -104,7 +113,6 @@ const reconcileChildren = (fiber, children) => {
                 tag: getTag(element),
                 effects: [],
                 effectTag: 'placement', // 新增
-                stateNode: null, // dom对象，暂时没有
                 parent: fiber,
             }
             // 获取节点对象
@@ -112,9 +120,9 @@ const reconcileChildren = (fiber, children) => {
         }
 
         // 如果第一个子节点就赋值到fiber上
-        if (index == 0) {
+        if (index === 0) {
             fiber.child = newFiber;
-        } else {
+        } else if (element) {
             // 否则放在前一个的兄弟节点上
             prevFiber.sibling = newFiber;
         }
@@ -122,7 +130,7 @@ const reconcileChildren = (fiber, children) => {
         if (alternate && alternate.sibling) {
             alternate = alternate.sibling;
         } else {
-            null;
+            alternate = null;
         }
         prevFiber = newFiber;
         index++;
